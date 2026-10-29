@@ -1,0 +1,46 @@
+{
+  "atomCode": "build-name-setter",
+  "name": "Build name and description setter",
+  "version": "1.0.0",
+  "description": "Renames the running build and sets its description, optionally taking the name from a regex over the console log.",
+  "execution": {
+    "packagePath": "build-name-setter.jar",
+    "language": "java",
+    "target": "$atom_java_path -cp build-name-setter.jar BuildNameSetter"
+  },
+  "input": {
+    "displayName": {
+      "label": "构建名模板（支持 ${BUILD_NUMBER}、${GIT_COMMIT} 等环境变量）",
+      "type": "vuex-input",
+      "default": "#${BUILD_NUMBER}"
+    },
+    "description": {
+      "label": "构建描述（同样支持环境变量，可留空）",
+      "type": "textarea",
+      "default": ""
+    },
+    "fromLog": {
+      "label": "从日志取名用的正则（留空则只用模板）",
+      "type": "vuex-input",
+      "default": ""
+    },
+    "matchTemplate": {
+      "label": "命中正则后使用的模板（%MATCH% 为捕获组一，留空则整段替换构建名）",
+      "type": "vuex-input",
+      "default": ""
+    }
+  },
+  "output": {
+    "displayName": {
+      "type": "string",
+      "description": "最终写入的构建名"
+    }
+  },
+  "x-jenkins": {
+    "protocol": "jenkins-1",
+    "context": ["log"],
+    "requires": {
+      "runner": ">=0.3.0"
+    }
+  }
+}

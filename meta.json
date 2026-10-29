@@ -1,0 +1,8 @@
+{
+  "name": "Build name and description setter",
+  "summary": "把 build-name-setter 插件变成一个原子：模板改名、日志正则取名、写描述。",
+  "author": "hummerstudio",
+  "license": "MIT",
+  "tags": ["build", "metadata", "official-port"],
+  "homepage": "https://github.com/hummerstudio/jenkins-atom-build-name-setter"
+}
