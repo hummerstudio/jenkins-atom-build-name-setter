@@ -4,9 +4,7 @@ import com.jenkinschina.atom.sdk.AtomContext;
 import com.jenkinschina.atom.sdk.AtomResult;
 import com.jenkinschina.atom.sdk.AtomTask;
 import com.jenkinschina.atom.sdk.ErrorType;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.jenkinschina.atom.sdk.Mutation;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,22 +25,16 @@ public class BuildNameSetter implements AtomTask {
         String matchTemplate = context.getParam("matchTemplate", "");
 
         if (!fromLog.isBlank()) {
-            // the runner copies the environment into input.json; the env fallback keeps a local run working
-            String logName = context.getParam("atom_build_log", System.getenv().getOrDefault("atom_build_log", ""));
-            if (logName.isBlank()) {
+            if (!context.hasBuildLog()) {
                 return AtomResult.error(
                         ErrorType.USER,
                         40001,
-                        "fromLog is set but task.json does not declare x-jenkins.context [log]");
+                        "fromLog is set but the build log was not handed over"
+                                + " (declare x-jenkins.context [\"log\"] in task.json)");
             }
-            Path logFile = context.getDataDir().resolve(logName);
-            if (!Files.isRegularFile(logFile)) {
-                return AtomResult.error(ErrorType.USER, 40002, "build log not found: " + logName);
-            }
-            String log = Files.readString(logFile, StandardCharsets.UTF_8);
             Matcher matcher;
             try {
-                matcher = Pattern.compile(fromLog, Pattern.MULTILINE).matcher(log);
+                matcher = Pattern.compile(fromLog, Pattern.MULTILINE).matcher(context.buildLog());
             } catch (RuntimeException e) {
                 return AtomResult.error(ErrorType.USER, 40003, "fromLog is not a valid regular expression: " + e);
             }
@@ -57,31 +49,11 @@ public class BuildNameSetter implements AtomTask {
             }
         }
 
-        writeMutations(context, displayName, description);
+        context.mutate(Mutation.of(
+                displayName.isBlank() ? null : displayName,
+                description.isBlank() ? null : description));
         context.log("[name-setter] " + displayName);
         return AtomResult.success().data("displayName", displayName);
-    }
-
-    /**
-     * The runner's mutation contract: a file next to the outputs, not an API call. Only these two fields are allowed,
-     * which is why the atom cannot do anything else to the build.
-     */
-    private void writeMutations(AtomContext context, String displayName, String description) throws Exception {
-        StringBuilder json = new StringBuilder("{");
-        if (!displayName.isBlank()) {
-            json.append("\"displayName\": \"").append(escape(displayName)).append('"');
-        }
-        if (!description.isBlank()) {
-            if (json.length() > 1) {
-                json.append(", ");
-            }
-            json.append("\"description\": \"").append(escape(description)).append('"');
-        }
-        json.append('}');
-        Files.writeString(
-                context.getDataDir().resolve("mutations.json"),
-                json.toString(),
-                StandardCharsets.UTF_8);
     }
 
     /** {@code ${BUILD_NUMBER}} and friends; an unknown name is left as written so the log shows what went wrong. */
@@ -96,22 +68,6 @@ public class BuildNameSetter implements AtomTask {
             matcher.appendReplacement(out, Matcher.quoteReplacement(value == null ? matcher.group() : value));
         }
         matcher.appendTail(out);
-        return out.toString();
-    }
-
-    private static String escape(String value) {
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '"' -> out.append("\\\"");
-                case '\\' -> out.append("\\\\");
-                case '\n' -> out.append("\\n");
-                case '\r' -> out.append("\\r");
-                case '\t' -> out.append("\\t");
-                default -> out.append(c);
-            }
-        }
         return out.toString();
     }
 }

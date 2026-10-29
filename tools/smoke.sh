@@ -4,6 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+export BUILD_NUMBER=7 JOB_NAME="$(basename "$PWD")-job"
+
 ./build.sh >/dev/null
 jar="$(cd dist/build-name-setter && pwd)/build-name-setter.jar"
 java_bin="${JAVA_HOME:+$JAVA_HOME/bin/}java"
@@ -12,6 +14,18 @@ fail() { echo "smoke failed: $*" >&2; exit 1; }
 # run <dir> [extra env assignments...]: returns the atom's exit code, log in <dir>/run.log
 run() {
   local dir="$1"; shift
+  python3 - "$dir/input.json" "$dir" <<'JSONFIX'
+import json, os, sys
+path, workspace = sys.argv[1], sys.argv[2]
+given = {}
+if os.path.exists(path) and os.path.getsize(path):
+    given = json.load(open(path))
+# the runner writes its environment into input.json first, then the job's inputs on top
+data = dict(os.environ)
+data.update(given)
+data.setdefault("atom_workspace", workspace)
+json.dump(data, open(path, "w"))
+JSONFIX
   printf '%s' "${SMOKE_LOG_CONTENT:-}" >"$dir/build.log"
   ( cd "$dir" && env atom_data_dir="$dir" atom_data_input=input.json atom_data_output=output.json \
       BUILD_NUMBER=7 GIT_COMMIT=abc1234 "$@" \
@@ -50,6 +64,6 @@ cat >"$dir/input.json" <<'JSON'
 JSON
 if run "$dir"; then fail "a missing context must fail the atom"; fi
 grep -q '"status":"error"' "$dir/output.json" || fail "missing context must be an error"
-grep -q 'does not declare x-jenkins.context' "$dir/output.json" || fail "message is not readable"
+grep -q 'build log was not handed over' "$dir/output.json" || fail "message is not readable: $(cat "$dir/output.json")"
 
 echo "smoke ok: template, log regex, missing context"
