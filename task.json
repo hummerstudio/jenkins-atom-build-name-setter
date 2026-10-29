@@ -1,12 +1,12 @@
 {
   "atomCode": "build-name-setter",
   "name": "Build name and description setter",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Renames the running build and sets its description, optionally taking the name from a regex over the console log.",
   "execution": {
     "packagePath": "build-name-setter.jar",
     "language": "java",
-    "target": "$atom_java_path -cp build-name-setter.jar BuildNameSetter"
+    "target": "$atom_java_path -cp build-name-setter.jar com.jenkinschina.atom.sdk.AtomRunner"
   },
   "input": {
     "displayName": {
@@ -38,7 +38,9 @@
   },
   "x-jenkins": {
     "protocol": "jenkins-1",
-    "context": ["log"],
+    "context": [
+      "log"
+    ],
     "requires": {
       "runner": ">=0.3.0"
     }
