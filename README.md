@@ -22,14 +22,13 @@ and the runner applies it:
 Only `displayName` and `description` are accepted, and every applied change is printed in the console — an atom can
 rename its own build, nothing else.
 
-## Build and smoke test
+## Build and test
 
 ```bash
-./build.sh		# → dist/build-name-setter/{build-name-setter.jar,task.json}
-./tools/smoke.sh	# runs the atom the way the runner does: input.json + build.log in, mutations.json out
+mvn verify	# → dist/build-name-setter/{build-name-setter.jar,task.json}; runs src/test/java/atom/BuildNameSetterIT
 ```
 
-The smoke test covers the template path, the log-regex path, and the case where the task forgot to declare the log —
+The integration test covers the template path, the log-regex path, and the case where the task forgot to declare the log —
 that last one must fail with a readable message instead of silently keeping the template.
 
 ## Publish
