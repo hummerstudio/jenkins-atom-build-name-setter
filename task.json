@@ -1,7 +1,7 @@
 {
   "atomCode": "build-name-setter",
   "name": "Build name and description setter",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Renames the running build and sets its description, optionally taking the name from a regex over the console log.",
   "execution": {
     "packagePath": "build-name-setter.jar",
@@ -42,7 +42,7 @@
       "log"
     ],
     "requires": {
-      "runner": ">=0.3.0"
+      "runner": ">=0.4.0"
     }
   }
 }
